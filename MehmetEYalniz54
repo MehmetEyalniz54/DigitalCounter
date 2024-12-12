@@ -1,0 +1,72 @@
+#include <aduc841.h>  ; program etiketleri tanimlaniyor
+ORG 0000H       ; Program baslangici
+SJMP START  ; Program baslangicina atla
+
+ORG 0003H       ; Dis kesme0 (INTO) vektör adresi
+SJMP ISR_INT0 ; Kesme rutinine atla
+
+START:
+	setb ea
+	setb ex0
+	clr p2.3
+	
+	mov 40h,#00h
+	mov p0,#00h
+    MOV TMOD, #01H 
+	mov r0, #168d
+	mov dptr,#10225d
+	MOV TL0, dpl	; Timer0 mod 1 (16-bit timer)
+    MOV TH0, dph      ; 1 saniye için baslangiç degeri (yüksek byte)
+         ; 1 saniye için baslangiç degeri (düsük byte)
+    
+
+	
+	;f:
+	;jb p3.2,f
+	;t:
+	;jnb p3.2,t
+
+MAIN_LOOP:
+    ; BT5 yoklamali kontrol
+    x1:JB P3.3, x1   ; P3.3 (BT5) basili mi kontrol et, basiliysa ilgili isleme git
+acall delay
+	x2:JNB P3.3, x2
+    ; Timer0 tasma kontrolü
+	setb tr0
+    x3:JNB TF0, x3     ; Timer0 tasma bayragi set edilene kadar bekle
+	
+	clr tf0
+	clr tr0
+    ; Timer0 tasmasi oldugunda Led3 durumunu degistir
+    CPL P0.2               ; P0.2 (Led3) tersle
+
+    ; Timer0 tekrar baslat
+	MOV TL0, dpl        ; 1 saniye için baslangiç degeri (düsük byte)
+    MOV TH0, dph         ; 1 saniye için baslangiç degeri (yüksek byte)
+	setb tr0
+	
+	djnz 40h,x3
+	
+    SJMP MAIN_LOOP         ; Ana döngüye geri dön
+
+delay:
+mov r3,#84d
+dur: 
+cjne r0,#0, dur
+reti
+
+
+ISR_INT0:
+    ; Dis kesme0 (BT4) kesme rutini
+    CLR ea               ; Dis kesme0 bayragini temizle
+	clr ex0
+    ; BT4'e basildiginda yapilacak islemler
+	inc 40h
+    ;mov a,40h
+	;inc a	
+	;mov 40h,a
+	setb ea
+	setb ex0
+	reti
+
+END
